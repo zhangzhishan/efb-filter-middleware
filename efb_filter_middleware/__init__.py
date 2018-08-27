@@ -44,7 +44,7 @@ class FilterMiddleware(EFBMiddleware):
         self.chat.chat_name = self.middleware_name
         self.chat.chat_type = ChatType.System
 
-        self.logger = logging.getLogger("blueset.filter")
+        self.logger = logging.getLogger("zhangzhishan.filter")
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
         self.logger.debug("Received message: %s", message)
