@@ -4,8 +4,6 @@ import os
 import pickle
 import logging
 import uuid
-from pkg_resources import resource_filename
-from gettext import translation
 from typing import Optional, Dict, Tuple
 
 from ehforwarderbot import EFBMiddleware, EFBMsg, utils, MsgType, EFBChat, ChatType, coordinator
