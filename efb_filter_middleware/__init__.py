@@ -32,7 +32,7 @@ class FilterMiddleware(EFBMiddleware):
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
         if not os.path.exists(config_path):
-            raise EFBException(self._("Filter middleware is not configured."))
+            raise EFBException("Filter middleware is not configured.")
         else:
             config = yaml.load(open(config_path))
 
