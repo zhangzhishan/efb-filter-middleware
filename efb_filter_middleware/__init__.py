@@ -43,6 +43,11 @@ class FilterMiddleware(EFBMiddleware):
         self.chat.chat_type = ChatType.System
 
         self.logger = logging.getLogger("zhangzhishan.filter")
+        hdlr = logging.FileHandler('./zhangzhishan.filter.log')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        hdlr.setFormatter(formatter)
+        self.logger.addHandler(hdlr) 
+        self.logger.setLevel(logging.DEBUG)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
         self.logger.debug("Received message: %s", message)
