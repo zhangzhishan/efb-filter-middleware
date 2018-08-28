@@ -33,6 +33,8 @@ class FilterMiddleware(EFBMiddleware):
             raise EFBException("Filter middleware is not configured.")
         else:
             config = yaml.load(open(config_path))
+            self.whitelist = config.get('whitelist')
+
 
         self.chat = EFBChat()
         self.chat.channel_name = self.middleware_name
@@ -50,11 +52,14 @@ class FilterMiddleware(EFBMiddleware):
         self.logger.setLevel(logging.DEBUG)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
-        self.logger.debug("Received message: %s", message)
-        if not message.type == MsgType.Text:
-            return message
-        self.logger.debug("[%s] is a text message.", message.uid)
-        return message
+        self.logger.debug("Received message: %s", message.author.chat_name)
+        for whitechat in self.whitelist:
+            if whitechat in message.author.chat_name:
+                return message
+        # if not message.type == MsgType.Text:
+        #     return message
+        # self.logger.debug("[%s] is a text message.", message.uid)
+        
 
     def reply_message(self, message: EFBMsg, text: str):
         reply = EFBMsg()
