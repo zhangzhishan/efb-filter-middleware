@@ -50,21 +50,23 @@ class FilterMiddleware(EFBMiddleware):
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr) 
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.ERROR)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
-        from_person = message.author.chat_name
+        
         if message.author.group:
             from_group = message.author.group.chat_name
             self.logger.debug("Received message from group: %s", from_group)
             for whitechat in self.white_groups:
-                self.logger.debug("whitechat: %s", whitechat)
+                # self.logger.debug("whitechat: %s", whitechat)
                 if whitechat in from_group:
                     return message
 
-        self.logger.debug("Received message from person: %s", from_person)
+        
         for whitechat in self.white_persons:
-            self.logger.debug("whitechat: %s", whitechat)
+            from_person = message.author.chat_name
+            self.logger.debug("Received message from person: %s", from_person)
+            # self.logger.debug("whitechat: %s", whitechat)
             if whitechat in from_person:
                 return message
         # if not message.type == MsgType.Text:
