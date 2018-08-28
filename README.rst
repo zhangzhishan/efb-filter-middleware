@@ -1,3 +1,12 @@
-#A filter middleware for EFB
+# A filter middleware for EFB
 
-## some changes
+
+## configuration
+
+```
+white_persons:
+    - ksjf
+    - sldkf
+white_groups:
+    - A ds
+```

@@ -32,8 +32,9 @@ class FilterMiddleware(EFBMiddleware):
         if not os.path.exists(config_path):
             raise EFBException("Filter middleware is not configured.")
         else:
-            config = yaml.load(open(config_path))
-            self.whitelist = config.get('whitelist')
+            config = yaml.load(open(config_path, encoding ="UTF-8"))
+            self.white_persons = config.get('white_persons')
+            self.white_groups = config.get('white_groups')
 
 
         self.chat = EFBChat()
@@ -45,16 +46,26 @@ class FilterMiddleware(EFBMiddleware):
         self.chat.chat_type = ChatType.System
 
         self.logger = logging.getLogger("zhangzhishan.filter")
-        hdlr = logging.FileHandler('./zhangzhishan.filter.log')
+        hdlr = logging.FileHandler('./zhangzhishan.filter.log', encoding ="UTF-8")
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr) 
         self.logger.setLevel(logging.DEBUG)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
-        self.logger.debug("Received message: %s", message.author.chat_name)
-        for whitechat in self.whitelist:
-            if whitechat in message.author.chat_name:
+        from_person = message.author.chat_name
+        if message.author.group:
+            from_group = message.author.group.chat_name
+            self.logger.debug("Received message from group: %s", from_group)
+            for whitechat in self.white_groups:
+                self.logger.debug("whitechat: %s", whitechat)
+                if whitechat in from_group:
+                    return message
+
+        self.logger.debug("Received message from person: %s", from_person)
+        for whitechat in self.white_persons:
+            self.logger.debug("whitechat: %s", whitechat)
+            if whitechat in from_person:
                 return message
         # if not message.type == MsgType.Text:
         #     return message
