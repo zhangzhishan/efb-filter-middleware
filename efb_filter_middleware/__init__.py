@@ -33,6 +33,7 @@ class FilterMiddleware(EFBMiddleware):
             raise EFBException("Filter middleware is not configured.")
         else:
             config = yaml.load(open(config_path, encoding ="UTF-8"))
+            self.config_version = config.get('version')
             self.white_persons = config.get('white_persons')
             self.white_groups = config.get('white_groups')
 
@@ -50,10 +51,15 @@ class FilterMiddleware(EFBMiddleware):
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr) 
-        self.logger.setLevel(logging.ERROR)
+        self.logger.setLevel(logging.DEBUG)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
-        
+        config = yaml.load(open(utils.get_config_path(self.middleware_id), encoding ="UTF-8"))
+        if self.config_version != config.get('version'):
+            self.logger.debug("config changed!")
+            self.config_version = config.get('version')
+            self.white_persons = config.get('white_persons')
+            self.white_groups = config.get('white_groups')
         if message.author.group:
             from_group = message.author.group.chat_name
             self.logger.debug("Received message from group: %s", from_group)
