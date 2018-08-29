@@ -29,4 +29,4 @@ Notice
 -----------------
 
 - Case sensitive
-- You should be included to receive your seeding messages.
+- You should be included to receive your sending messages.
