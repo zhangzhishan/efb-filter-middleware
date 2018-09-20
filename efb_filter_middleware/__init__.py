@@ -64,7 +64,7 @@ class FilterMiddleware(EFBMiddleware):
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr) 
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.ERROR)
 
     def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
         config = yaml.load(open(utils.get_config_path(self.middleware_id), encoding ="UTF-8"))
@@ -85,22 +85,24 @@ class FilterMiddleware(EFBMiddleware):
     def black_match(self, from_, from_alias, configs):
         if self.match_mode == "fuzz":
             for config in configs:
-                if from_ in config or from_alias in config:
+                if config in from_ or config in from_alias:
                     return False
             return True
-        else:                    
+            
+        else:     
             if from_ in configs or from_alias in configs:
                 return False
             else:
                 return True
+            
 
     def white_match(self, from_, from_alias, configs):
-        if self.match_mode == "fuzz":       
+        if self.match_mode == "fuzz": 
             for config in configs:
-                if from_ in config or from_alias in config:
+                if config in from_ or config in from_alias:
                     return True
             return False
-        else:                    
+        else:          
             if from_ in configs or from_alias in configs:
                 return True
             else:
@@ -113,7 +115,7 @@ class FilterMiddleware(EFBMiddleware):
         # self.logger.debug("Received message from person: %s--%s", from_person, from_alias)
         self.logger.debug("Received message from myself: %s", message.author.is_self)
         self.logger.debug("Received message from chat: %s--%s", message.chat.chat_alias, message.chat.chat_name)
-        
+        self.logger.debug("Rktke: %s", self.match_mode)
         if message.chat.chat_type.value == "Group":
             self.logger.debug("Received message from group: %s--%s", message.author.group.chat_alias, message.author.group.chat_name)
             from_ = message.author.group.chat_name
@@ -131,11 +133,13 @@ class FilterMiddleware(EFBMiddleware):
                 from_alias = from_
             if message.chat.vendor_specific is not None and message.chat.vendor_specific['is_mp']:
                 if work_mode is WorkMode.black_public:
+                    self.logger.debug("Receive work black public")
                     return self.black_match(from_, from_alias, configs)
                 if work_mode is WorkMode.white_public:
                     return self.white_match(from_, from_alias, configs)
             else:                
                 if work_mode is WorkMode.black_person:
+                    self.logger.debug("Receive work black person")
                     return self.black_match(from_, from_alias, configs)
                 if work_mode is WorkMode.white_person:
                     return self.white_match(from_, from_alias, configs)

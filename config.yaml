@@ -1,0 +1,16 @@
+﻿version: 4.91
+match_mode: fuzz
+work_mode:
+    - black_persons
+    - white_groups
+    - white_publics
+white_persons:
+    - libai
+white_groups:
+    - testsyou
+    - 经典
+white_publics:
+    - 银行
+    - 微信
+black_persons:
+    - nopp
