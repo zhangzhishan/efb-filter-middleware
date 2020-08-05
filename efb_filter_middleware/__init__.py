@@ -57,7 +57,7 @@ class FilterMiddleware(Middleware):
         self.logger.setLevel(logging.ERROR)
 
     def process_message(self, message: Message) -> Optional[Message]:
-        config = yaml.load(open(utils.get_config_path(self.middleware_id), encoding ="UTF-8"))
+        config = yaml.full_load(open(utils.get_config_path(self.middleware_id), encoding ="UTF-8"))
         if isinstance(message.author, SelfChatMember):
             return message
         if self.config_version != config.get('version'):
@@ -65,10 +65,7 @@ class FilterMiddleware(Middleware):
             self.config_version = config.get('version')
             self.work_modes = config.get('work_mode')
         for work_mode in WorkMode:
-            # print(self.work_modes)
-            # print(work_mode.value)
             if work_mode.value in self.work_modes:
-                # print(config.get(work_mode.value))
                 if config.get(work_mode.value) and self.is_keep_message(work_mode, message, config.get(work_mode.value)):
                     return message
 
@@ -106,22 +103,27 @@ class FilterMiddleware(Middleware):
         from_alias = message.author.alias
         if from_alias is None:
             from_alias = from_
+        chat_name = message.chat.name
+        chat_alias = message.chat.alias
+        if chat_alias is None:
+            chat_alias = chat_name
         self.logger.debug("Received message from : %s--%s", from_, from_alias)
         if isinstance(message.chat, GroupChat):
+            self.logger.debug("Receive group chat")
             if work_mode is WorkMode.black_group:
-                return self.black_match(from_, from_alias, configs)
+                return self.black_match(chat_name, chat_alias, configs)
             if work_mode is WorkMode.white_group:
-                return self.white_match(from_, from_alias, configs)
+                return self.white_match(chat_name, chat_alias, configs)
         else:
             if message.chat.vendor_specific is not None and message.chat.vendor_specific['is_mp']:
                 if work_mode is WorkMode.black_public:
-                    self.logger.debug("Receive work black public")
+                    self.logger.debug("Receive black public")
                     return self.black_match(from_, from_alias, configs)
                 if work_mode is WorkMode.white_public:
                     return self.white_match(from_, from_alias, configs)
             else:                
                 if work_mode is WorkMode.black_person:
-                    self.logger.debug("Receive work black person")
+                    self.logger.debug("Receive black person")
                     return self.black_match(from_, from_alias, configs)
                 if work_mode is WorkMode.white_person:
                     return self.white_match(from_, from_alias, configs)
