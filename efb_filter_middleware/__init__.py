@@ -6,8 +6,9 @@ import logging
 import uuid
 from typing import Optional, Dict, Tuple
 
-from ehforwarderbot import EFBMiddleware, EFBMsg, utils, MsgType, EFBChat, ChatType, coordinator
+from ehforwarderbot import Middleware, Message, utils, MsgType, Chat, coordinator
 from ehforwarderbot.exceptions import EFBException
+from ehforwarderbot.chat import GroupChat, SelfChatMember
 import yaml
 
 from enum import Enum
@@ -23,14 +24,13 @@ class WorkMode(Enum):
     white_group = "white_groups"
 
 
-class FilterMiddleware(EFBMiddleware):
+class FilterMiddleware(Middleware):
     middleware_id: str = "zhangzhishan.filter"
     middleware_name: str = "Filter Middleware"
     __version__: str = version
 
     mappings: Dict[Tuple[str, str], str] = {}
-    chat: EFBChat = None
-
+    chat: Chat = None
 
 
     def __init__(self, instance_id: str = None):
@@ -49,16 +49,6 @@ class FilterMiddleware(EFBMiddleware):
             if self.match_mode is None:
                 self.match_mode = "fuzz"
 
-
-
-        self.chat = EFBChat()
-        self.chat.channel_name = self.middleware_name
-        self.chat.channel_id = self.middleware_id
-        self.chat.channel_emoji = "📜"
-        self.chat.chat_uid = "__zhangzhishan.filter__"
-        self.chat.chat_name = self.middleware_name
-        self.chat.chat_type = ChatType.System
-
         self.logger = logging.getLogger("zhangzhishan.filter")
         hdlr = logging.FileHandler('./zhangzhishan.filter.log', encoding ="UTF-8")
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -66,9 +56,9 @@ class FilterMiddleware(EFBMiddleware):
         self.logger.addHandler(hdlr) 
         self.logger.setLevel(logging.ERROR)
 
-    def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
+    def process_message(self, message: Message) -> Optional[Message]:
         config = yaml.load(open(utils.get_config_path(self.middleware_id), encoding ="UTF-8"))
-        if message.author.is_self:
+        if isinstance(message.author, SelfChatMember):
             return message
         if self.config_version != config.get('version'):
             self.logger.debug("config changed!")
@@ -108,29 +98,21 @@ class FilterMiddleware(EFBMiddleware):
             else:
                 return False
 
-    def is_keep_message(self, work_mode: WorkMode, message: EFBMsg, configs: list) -> bool:
-        self.logger.debug("message author type:%s", message.author.chat_type)
-        self.logger.debug("message chat type:%s", message.chat.chat_type)
+    def is_keep_message(self, work_mode: WorkMode, message: Message, configs: list) -> bool:
         self.logger.debug("message is_mp type:%s", message.chat.vendor_specific['is_mp'])
-        # self.logger.debug("Received message from person: %s--%s", from_person, from_alias)
-        self.logger.debug("Received message from myself: %s", message.author.is_self)
-        self.logger.debug("Received message from chat: %s--%s", message.chat.chat_alias, message.chat.chat_name)
-        self.logger.debug("Rktke: %s", self.match_mode)
-        if message.chat.chat_type.value == "Group":
-            self.logger.debug("Received message from group: %s--%s", message.author.group.chat_alias, message.author.group.chat_name)
-            from_ = message.author.group.chat_name
-            from_alias = message.author.group.chat_alias
-            if from_alias is None:
-                from_alias = from_
+        self.logger.debug("Received message from chat: %s--%s", message.chat.alias, message.chat.name)
+        self.logger.debug("match_mode: %s", self.match_mode)
+        from_ = message.author.name
+        from_alias = message.author.alias
+        if from_alias is None:
+            from_alias = from_
+        self.logger.debug("Received message from : %s--%s", from_, from_alias)
+        if isinstance(message.chat, GroupChat):
             if work_mode is WorkMode.black_group:
                 return self.black_match(from_, from_alias, configs)
             if work_mode is WorkMode.white_group:
                 return self.white_match(from_, from_alias, configs)
         else:
-            from_ = message.author.chat_name
-            from_alias = message.author.chat_alias
-            if from_alias is None:
-                from_alias = from_
             if message.chat.vendor_specific is not None and message.chat.vendor_specific['is_mp']:
                 if work_mode is WorkMode.black_public:
                     self.logger.debug("Receive work black public")
@@ -143,40 +125,3 @@ class FilterMiddleware(EFBMiddleware):
                     return self.black_match(from_, from_alias, configs)
                 if work_mode is WorkMode.white_person:
                     return self.white_match(from_, from_alias, configs)
-           
-            
-
-
-
-        #             self.white_persons = config.get('white_persons')
-        #     self.white_groups = config.get('white_groups')
-        # if message.author.group:
-            
-        #     self.logger.debug("Received message from group: %s", from_group)
-        #     for whitechat in self.white_groups:
-        #         # self.logger.debug("whitechat: %s", whitechat)
-        #         if whitechat in from_group:
-        #             return message
-
-        
-        # for whitechat in self.white_persons:
-        #     from_person = 
-            
-        #     # self.logger.debug("whitechat: %s", whitechat)
-        #     if whitechat in from_person:
-        #         return message
-        # # if not message.type == MsgType.Text:
-        # #     return message
-        # # self.logger.debug("[%s] is a text message.", message.uid)
-        
-
-    def reply_message(self, message: EFBMsg, text: str):
-        reply = EFBMsg()
-        reply.text = text
-        reply.chat = coordinator.slaves[message.chat.channel_id].get_chat(message.chat.chat_uid)
-        reply.author = self.chat
-        reply.type = MsgType.Text
-        reply.deliver_to = coordinator.master
-        reply.target = message
-        reply.uid = str(uuid.uuid4())
-        coordinator.send_message(reply)
